@@ -1,0 +1,44 @@
+version: "3.7"
+
+services:
+
+  mercury-visualizer:
+      image: "aditazz/mercury-visualizer:${IMAGE_TAG}"
+
+      environment:
+        - AZ_ENDPOINT=${AZ_ENDPOINT}
+        - AZ_BUSINESS_URI=${AZ_BUSINESS_URI}
+
+      deploy:
+        replicas: 3
+        update_config:
+          parallelism: 1
+          delay: 10s
+        restart_policy:
+          condition: on-failure
+        labels:
+          - "traefik.enable=true"
+          - "traefik.http.routers.mercury-visualizer_http.rule=Host(`${HOSTNAME}`) && PathPrefix(`/${ENDPOINT}`) || Host(`www.$HOSTNAME`) && PathPrefix(`/${ENDPOINT}`)"
+          - "traefik.http.routers.mercury-visualizer_http.middlewares=https_redirect"
+
+          - "traefik.http.routers.mercury-visualizer_https.rule=Host(`${HOSTNAME}`) && PathPrefix(`/${ENDPOINT}`) || Host(`www.$HOSTNAME`) && PathPrefix(`/${ENDPOINT}`)"
+          - "traefik.http.routers.mercury-visualizer_https.tls=true"
+          - "traefik.http.routers.mercury-visualizer_https.middlewares=slashredirect"
+
+          - "traefik.http.services.mercury-visualizer.loadbalancer.server.port=${PORT}"
+
+          - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
+          - "traefik.http.middlewares.https_redirect.redirectscheme.permanent=true"
+
+          - "traefik.http.middlewares.slashredirect.redirectregex.regex=^https://(www.)?${HOSTNAME}/${ENDPOINT}$$"
+          - "traefik.http.middlewares.slashredirect.redirectregex.replacement=https://$${1}${HOSTNAME}/${ENDPOINT}/"
+          - "traefik.http.middlewares.slashredirect.redirectregex.permanent=true"
+          - "traefik.http.middlewares.stripprefixvisualizer.stripprefix.prefixes=/${ENDPOINT}"
+
+      networks:
+        - traefik_default
+
+
+networks:
+  traefik_default:
+    external: true

@@ -1,0 +1,7 @@
+**/secretfile filter=git-crypt diff=git-crypt
+**/*id_rsa filter=git-crypt diff=git-crypt
+**/*id_dsa filter=git-crypt diff=git-crypt
+**/*.key filter=git-crypt diff=git-crypt
+**/*.pem filter=git-crypt diff=git-crypt
+**/*.secret.yaml filter=git-crypt diff=git-crypt
+**/keys/** filter=git-crypt diff=git-crypt

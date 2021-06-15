@@ -1,0 +1,49 @@
+version: "3.7"
+
+services:
+
+    mercury-business:
+      image: "aditazz/mercury-business:${IMAGE_TAG}"
+
+      environment:
+        - PORT=${PORT}
+        - AZ_DATABASE=${AZ_DATABASE}
+        - AZ_LAUNCHER_TAGS=${AZ_LAUNCHER_TAGS}
+
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - ${AZ_DOCKER_EXCHANGE_FOLDER}:${AZ_DOCKER_EXCHANGE_FOLDER}
+        - ${AZ_DATABASE}:${AZ_DATABASE}
+      deploy:
+        replicas: 1
+        update_config:
+          parallelism: 1
+          delay: 10s
+        restart_policy:
+          condition: on-failure
+        labels:
+          - "traefik.enable=true"
+          - "traefik.http.routers.mercury-business_http.rule=Host(`$HOSTNAME`) && PathPrefix(`/$ENDPOINT`) || Host(`www.$HOSTNAME`) && PathPrefix(`/${ENDPOINT}`)"
+          - "traefik.http.routers.mercury-business_http.middlewares=stripprefixbusiness"
+          - "traefik.http.routers.mercury-business_http.middlewares=https_redirect"
+
+          - "traefik.http.routers.mercury-business_https.rule=Host(`$HOSTNAME`) && PathPrefix(`/$ENDPOINT`) || Host(`www.$HOSTNAME`) && PathPrefix(`/${ENDPOINT}`)"
+          - "traefik.http.routers.mercury-business_https.middlewares=stripprefixbusiness"
+          - "traefik.http.routers.mercury-business_https.tls.certresolver=le"
+
+
+          - "traefik.http.services.mercury-business.loadbalancer.server.port=${PORT}"
+
+          - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
+          - "traefik.http.middlewares.https_redirect.redirectscheme.permanent=true"
+
+          - "traefik.http.middlewares.stripprefixbusiness.stripprefix.prefixes=/${ENDPOINT}"
+
+
+
+      networks:
+        - traefik_default
+
+networks:
+  traefik_default:
+    external: true
